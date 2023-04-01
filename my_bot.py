@@ -33,23 +33,26 @@ def get_last_update_id(updates):
     return max(update_ids)
 
 
-def echo_all(updates):
+def echo_all(updates, states_list, current_state):
     #pprint.pprint(updates)
-
     if 'text' in updates['result'][0]['message']:
         for update in updates["result"]:
             try:
                 text = update["message"]["text"]
                 chat = update["message"]["chat"]["id"]
-                if text == "/start":
-                    text = "Hello, I'm echo bot."
-                    send_message(text, chat)
-                elif text == "/show_button":
-                    text = "Select the button"
-                    keyboard = build_keyboard()
-                    send_message(text, chat, keyboard)
-                else:
-                    send_message(text, chat)
+                if text in states_list:
+                    current_state = text
+                send_message(current_state, chat)
+                return current_state
+                # if text == "/start":
+                #     text = "Hello, I'm echo bot."
+                #     send_message(text, chat)
+                # elif text == "/show_button":
+                #     text = "Select the button"
+                #     keyboard = build_keyboard()
+                #     send_message(text, chat, keyboard)
+                # else:
+                #     send_message(text, chat)
             except Exception as e:
                 print(e)
     elif 'photo' in updates['result'][0]['message']:
@@ -108,11 +111,14 @@ def build_keyboard():
 
 def main():
     last_update_id = None
+    states_list = ["morning", "day", "evening", "night"]
+    current_state = states_list[0]
     while True:
         updates = get_updates(last_update_id)
         if len(updates["result"]) > 0:
             last_update_id = get_last_update_id(updates) + 1
-            echo_all(updates)
+            current_state = echo_all(updates, states_list, current_state)
+
         time.sleep(0.5)
 
 
