@@ -3,7 +3,10 @@ import bot_config
 import json
 import time
 import urllib
+from dbhelper import DBHelper
 import pprint
+
+#db = DBHelper()
 
 
 def get_url(url): # получение json формата
@@ -33,37 +36,53 @@ def get_last_update_id(updates):
     return max(update_ids)
 
 
-def echo_all(updates, states_list, current_state):
+def echo_all(updates): #(updates, states_list, current_state)
     #pprint.pprint(updates)
     if 'text' in updates['result'][0]['message']:
         for update in updates["result"]:
             try:
                 text = update["message"]["text"]
                 chat = update["message"]["chat"]["id"]
-                if text in states_list:
-                    current_state = text
-                send_message(current_state, chat)
-                return current_state
-                # if text == "/start":
-                #     text = "Hello, I'm echo bot."
-                #     send_message(text, chat)
-                # elif text == "/show_button":
-                #     text = "Select the button"
-                #     keyboard = build_keyboard()
-                #     send_message(text, chat, keyboard)
-                # else:
-                #     send_message(text, chat)
+                # if text in states_list:
+                #     current_state = text
+                # send_message(current_state, chat)
+                # return current_state
+                if text == "/start":
+                    text = "Hello, I'm echo bot."
+                    send_message(text, chat)
+                elif text == "/show_button":
+                    text = "Select the button"
+                    keyboard = build_keyboard()
+                    send_message(text, chat, keyboard)
+                else:
+                    send_message(text, chat)
             except Exception as e:
                 print(e)
     elif 'photo' in updates['result'][0]['message']:
         for update in updates["result"]:
             try:
-                #text = "Photo"
                 chat = update["message"]["chat"]["id"]
-                #send_message(text, chat)
                 send_image(updates, chat)
             except Exception as e:
                 print(e)
+
+
+# def handle_updates(updates):
+#     for update in updates["result"]:
+#         try:
+#             text = update["message"]["text"]
+#             chat = update["message"]["chat"]["id"]
+#             items = db.get_items()
+#             if text in items:
+#                 db.delete_item(text)
+#                 items = db.get_items()
+#             else:
+#                 db.add_item(text)
+#                 items = db.get_items()
+#             message = "\n".join(items)
+#             send_message(message, chat)
+#         except KeyError:
+#             pass
 
 
 def get_last_chat_id_and_text(updates):
@@ -110,14 +129,17 @@ def build_keyboard():
 
 
 def main():
+    #db.setup()
     last_update_id = None
-    states_list = ["morning", "day", "evening", "night"]
-    current_state = states_list[0]
+    #states_list = ["morning", "day", "evening", "night"]
+    #current_state = states_list[0]
     while True:
         updates = get_updates(last_update_id)
         if len(updates["result"]) > 0:
             last_update_id = get_last_update_id(updates) + 1
-            current_state = echo_all(updates, states_list, current_state)
+            #handle_updates(updates)
+            echo_all(updates)
+            #current_state = echo_all(updates, states_list, current_state)
 
         time.sleep(0.5)
 
