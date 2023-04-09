@@ -53,7 +53,7 @@ def echo_all(updates, products_data, current_product): #(updates, states_list, c
                     text = "Hello, I'm a market bot.\nInput /show_menu to watching next or previous products"
                     send_message(text, chat)
                     send_next_product(chat, products_data[0])
-                    print(current_product % total_products)
+                    print("Вызов из echo_all", current_product % total_products)
                 elif text == "/show_menu":
                     text = "Select the button"
                     keyboard = build_keyboard()
@@ -63,12 +63,13 @@ def echo_all(updates, products_data, current_product): #(updates, states_list, c
                     send_message(text, chat)
                 elif text == "Next item":
                     current_product += 1
-                    print(current_product % total_products)
+                    print("Вызов из echo_all", current_product % total_products)
                     send_next_product(chat, products_data[current_product % total_products])
                 elif text == "Previous item":
                     current_product -= 1
-                    print(current_product % total_products)
+                    print("Вызов из echo_all", current_product % total_products)
                     send_next_product(chat, products_data[current_product % total_products])
+                return current_product
                 # elif text == "/stop":
                 #     pass
             except Exception as e:
@@ -141,12 +142,17 @@ def build_keyboard():
     return json.dumps(reply_markup)
 
 
-def send_next_product(chat_id, product_data):
+def get_data(product_data):
     product_info = product_data[1] + "\n" + product_data[2] + "\n" + "Coast: " + str(product_data[3])
     image_blob = product_data[4]
     with open('temp.jpg', 'wb') as file:
         file.write(image_blob)
     files = {'photo': open('temp.jpg', 'rb')}
+    return product_info, files
+
+
+def send_next_product(chat_id, product_data):
+    product_info, files = get_data(product_data)
     data = {
         'chat_id': chat_id,
         'caption': product_info,
@@ -167,7 +173,8 @@ def main():
         updates = get_updates(last_update_id)
         if len(updates["result"]) > 0:
             last_update_id = get_last_update_id(updates) + 1
-            echo_all(updates, products_data, current_product)
+            current_product = echo_all(updates, products_data, current_product)
+            print("Вызов из main", current_product)
             # handle_updates(updates)
             #current_state = echo_all(updates, states_list, current_state)
 
