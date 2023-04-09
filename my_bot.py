@@ -4,9 +4,10 @@ import json
 import time
 import urllib
 from dbhelper import DBHelper
+import os
 import pprint
 
-#db = DBHelper()
+db = DBHelper()
 
 
 def get_url(url): # получение json формата
@@ -36,35 +37,49 @@ def get_last_update_id(updates):
     return max(update_ids)
 
 
-def echo_all(updates): #(updates, states_list, current_state)
+def echo_all(updates, products_data, current_product): #(updates, states_list, current_state)
     #pprint.pprint(updates)
     if 'text' in updates['result'][0]['message']:
         for update in updates["result"]:
             try:
                 text = update["message"]["text"]
                 chat = update["message"]["chat"]["id"]
+                total_products = len(products_data)
                 # if text in states_list:
                 #     current_state = text
                 # send_message(current_state, chat)
                 # return current_state
                 if text == "/start":
-                    text = "Hello, I'm echo bot."
+                    text = "Hello, I'm a market bot.\nInput /show_menu to watching next or previous products"
                     send_message(text, chat)
-                elif text == "/show_button":
+                    send_next_product(chat, products_data[0])
+                    print(current_product % total_products)
+                elif text == "/show_menu":
                     text = "Select the button"
                     keyboard = build_keyboard()
                     send_message(text, chat, keyboard)
-                else:
+                elif text == "/help":
+                    text = "ДОБАВИТЬ ТЕКСТ"
                     send_message(text, chat)
+                elif text == "Next item":
+                    current_product += 1
+                    print(current_product % total_products)
+                    send_next_product(chat, products_data[current_product % total_products])
+                elif text == "Previous item":
+                    current_product -= 1
+                    print(current_product % total_products)
+                    send_next_product(chat, products_data[current_product % total_products])
+                # elif text == "/stop":
+                #     pass
             except Exception as e:
                 print(e)
-    elif 'photo' in updates['result'][0]['message']:
-        for update in updates["result"]:
-            try:
-                chat = update["message"]["chat"]["id"]
-                send_image(updates, chat)
-            except Exception as e:
-                print(e)
+    # elif 'photo' in updates['result'][0]['message']:
+    #     for update in updates["result"]:
+    #         try:
+    #             chat = update["message"]["chat"]["id"]
+    #             send_image(updates, chat)
+    #         except Exception as e:
+    #             print(e)
 
 
 # def handle_updates(updates):
@@ -121,24 +136,39 @@ def send_image(update, chat_id):
 
 
 def build_keyboard():
-    keyboard = [["Show text"], ["One more text"]]
+    keyboard = [["Next item"], ["Previous item"]]
     reply_markup = {"keyboard": keyboard, "one_time_keyboard": True}
     return json.dumps(reply_markup)
 
 
+def send_next_product(chat_id, product_data):
+    product_info = product_data[1] + "\n" + product_data[2] + "\n" + "Coast: " + str(product_data[3])
+    image_blob = product_data[4]
+    with open('temp.jpg', 'wb') as file:
+        file.write(image_blob)
+    files = {'photo': open('temp.jpg', 'rb')}
+    data = {
+        'chat_id': chat_id,
+        'caption': product_info,
+        'parse_mode': 'MarkdownV2',
+    }
+    requests.post(f"https://api.telegram.org/bot{bot_config.TOKEN}/sendPhoto", data=data, files=files)
+    #os.remove('temp.jpg')
 
 
 def main():
-    #db.setup()
+    db.setup()
     last_update_id = None
+    products_data = db.get_items()
+    current_product = 0
     #states_list = ["morning", "day", "evening", "night"]
     #current_state = states_list[0]
     while True:
         updates = get_updates(last_update_id)
         if len(updates["result"]) > 0:
             last_update_id = get_last_update_id(updates) + 1
-            #handle_updates(updates)
-            echo_all(updates)
+            echo_all(updates, products_data, current_product)
+            # handle_updates(updates)
             #current_state = echo_all(updates, states_list, current_state)
 
         time.sleep(0.5)
